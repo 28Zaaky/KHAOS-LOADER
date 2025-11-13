@@ -1,11 +1,29 @@
 # XvX Loader v3.0
 
-Windows shellcode loader with AES-256-CBC encryption and EDR/sandbox evasion techniques.
+Multi-stage Windows shellcode loader designed for red team operations. Implements AES-256-CBC encryption, EDR unhooking, indirect syscalls, ETW/AMSI bypass, and sandbox evasion to deliver payloads stealthily.
 
-## What is it?
+## Overview
 
-A loader that injects shellcode (like Meterpreter) into a legitimate Windows process (rundll32.exe) in stealth mode. 
-Bypasses EDR by using direct syscalls and unhooking NTDLL.
+XvX Loader is a production-ready malware loader that injects encrypted shellcode (Meterpreter, Cobalt Strike beacons, custom payloads) into legitimate Windows processes. Built with a modular architecture, it chains multiple evasion techniques to bypass modern security solutions.
+
+**Core capabilities:**
+- **AES-256-CBC Encryption**: Offline payload encryption with random key/IV per build (Windows CryptoAPI)
+- **EDR Unhooking**: Fresh NTDLL restoration from disk, bypassing userland hooks planted by security products
+- **Indirect Syscalls**: Direct kernel calls via dynamically resolved SSNs, avoiding hooked WinAPI functions
+- **ETW Bypass**: Runtime patching of EtwEventWrite/EtwEventWriteEx to suppress telemetry logs
+- **AMSI Neutralization**: Disables Windows Antimalware Scan Interface to evade PowerShell/script detection
+- **Sandbox Evasion**: Multi-layer checks (VM artifacts, RAM/CPU/disk validation, uptime analysis, user activity)
+- **APC Injection**: Early-bird technique with suspended process creation and thread resumption
+- **PPID Spoofing**: Fakes parent process as explorer.exe for process tree legitimacy
+- **String Obfuscation**: Syscall names obscured (SysAllocMem, SysWriteMem) to defeat static analysis
+
+**Technical highlights:**
+- Silent execution (no console window)
+- Minimal footprint (67 KB stripped binary)
+- Compiles with GCC/MinGW (no Visual Studio required)
+- Dynamic SSN resolution from clean NTDLL copy
+- RWX memory allocation via NtAllocateVirtualMemory syscall
+- Target process: rundll32.exe (stable, minimal dependencies)
 
 ## Architecture
 
