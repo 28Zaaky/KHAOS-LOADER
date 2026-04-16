@@ -1,4 +1,4 @@
-# XvX Loader
+# KHAØS LOADER
 
 <img src="assets/banner.png" width="100%">
 
