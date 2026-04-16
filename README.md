@@ -1,6 +1,6 @@
 # XvX Loader
 
-<img src="assets/banner.png" width="100%">
+<img src="assets/banner.png" width="600">
 
 ![Language](https://img.shields.io/badge/language-C-blue?style=flat-square)
 ![Language](https://img.shields.io/badge/language-Assembly-red?style=flat-square)
