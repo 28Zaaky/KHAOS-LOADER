@@ -13,13 +13,6 @@ typedef int BOOL;
 #define FALSE 0
 #endif
 
-/*
- * ETW Bypass Module
- * 
- * Disables Windows Event Tracing by patching ETW functions.
- * EDR/AV use ETW to monitor process activity - this prevents that.
- */
-
 // Results from ETW bypass operation
 typedef struct _ETW_RESULT {
     BOOL success;

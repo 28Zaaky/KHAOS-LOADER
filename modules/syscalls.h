@@ -1,6 +1,6 @@
 /*
  * Syscalls Module
- * 
+ *
  * Uses indirect syscalls to call Windows NT functions directly,
  * bypassing EDR/AV hooks in user-mode DLLs.
  */
@@ -28,8 +28,10 @@ typedef LONG NTSTATUS;
 
 #ifndef _IO_STATUS_BLOCK_DEFINED
 #define _IO_STATUS_BLOCK_DEFINED
-typedef struct _IO_STATUS_BLOCK {
-    union {
+typedef struct _IO_STATUS_BLOCK
+{
+    union
+    {
         NTSTATUS Status;
         PVOID Pointer;
     };
@@ -39,7 +41,8 @@ typedef struct _IO_STATUS_BLOCK {
 
 #ifndef _UNICODE_STRING_DEFINED
 #define _UNICODE_STRING_DEFINED
-typedef struct _UNICODE_STRING {
+typedef struct _UNICODE_STRING
+{
     USHORT Length;
     USHORT MaximumLength;
     PWSTR Buffer;
@@ -48,7 +51,8 @@ typedef struct _UNICODE_STRING {
 
 #ifndef _OBJECT_ATTRIBUTES_DEFINED
 #define _OBJECT_ATTRIBUTES_DEFINED
-typedef struct _OBJECT_ATTRIBUTES {
+typedef struct _OBJECT_ATTRIBUTES
+{
     ULONG Length;
     HANDLE RootDirectory;
     PUNICODE_STRING ObjectName;
@@ -60,7 +64,8 @@ typedef struct _OBJECT_ATTRIBUTES {
 
 #ifndef _CLIENT_ID_DEFINED
 #define _CLIENT_ID_DEFINED
-typedef struct _CLIENT_ID {
+typedef struct _CLIENT_ID
+{
     HANDLE UniqueProcess;
     HANDLE UniqueThread;
 } CLIENT_ID, *PCLIENT_ID;
@@ -68,14 +73,15 @@ typedef struct _CLIENT_ID {
 
 #endif // _WINTERNL_
 
-#define InitializeObjectAttributes(p, n, a, r, s) { \
-    (p)->Length = sizeof(OBJECT_ATTRIBUTES); \
-    (p)->RootDirectory = r; \
-    (p)->Attributes = a; \
-    (p)->ObjectName = n; \
-    (p)->SecurityDescriptor = s; \
-    (p)->SecurityQualityOfService = NULL; \
-}
+#define InitializeObjectAttributes(p, n, a, r, s) \
+    {                                             \
+        (p)->Length = sizeof(OBJECT_ATTRIBUTES);  \
+        (p)->RootDirectory = r;                   \
+        (p)->Attributes = a;                      \
+        (p)->ObjectName = n;                      \
+        (p)->SecurityDescriptor = s;              \
+        (p)->SecurityQualityOfService = NULL;     \
+    }
 
 #define OBJ_CASE_INSENSITIVE 0x00000040
 

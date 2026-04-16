@@ -16,12 +16,6 @@ typedef int BOOL;
 typedef unsigned long DWORD;
 #endif
 
-/*
- * Sandbox Evasion Module
- * Detects if running in a VM or sandbox environment
- * Checks hardware specs, debuggers, and system artifacts to calculate suspicion score
- */
-
 // Evasion result structure
 typedef struct _EVASION_RESULT {
     BOOL isSandbox;

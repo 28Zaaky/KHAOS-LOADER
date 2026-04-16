@@ -31,5 +31,10 @@ Thumbs.db
 
 # Secrets et payloads
 payload/*.bin
+payload/key_iv.txt
+payload/shellcode_aes.txt
 *.key
 *.enc
+
+# Claude
+.claude/

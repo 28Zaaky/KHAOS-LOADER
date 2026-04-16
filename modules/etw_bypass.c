@@ -67,18 +67,9 @@ BOOL PatchETWFunction(const char* functionName) {
 // Disables ETW by patching EtwEventWrite and EtwEventWriteEx
 BOOL DisableETW(ETW_RESULT* result) {
     #ifndef PRODUCTION
-    printf("\n");
+    printf("[*] ETW bypass...\n");
     #endif
-    #ifndef PRODUCTION
-    printf("╔══════════════════════════════════════════════════════╗\n");
-    #endif
-    #ifndef PRODUCTION
-    printf("║       ETW BYPASS                                      ║\n");
-    #endif
-    #ifndef PRODUCTION
-    printf("╚══════════════════════════════════════════════════════╝\n\n");
-    #endif
-    
+
     result->success = FALSE;
     result->etwEventWritePatched = FALSE;
     result->etwEventWriteExPatched = FALSE;
@@ -98,43 +89,12 @@ BOOL DisableETW(ETW_RESULT* result) {
 
 void PrintETWResult(ETW_RESULT* result) {
     #ifndef PRODUCTION
-    printf("\n");
-    #endif
-    #ifndef PRODUCTION
-    printf("╔══════════════════════════════════════════════════════╗\n");
-    #endif
-    #ifndef PRODUCTION
-    printf("║       ETW BYPASS RESULT                               ║\n");
-    #endif
-    #ifndef PRODUCTION
-    printf("╚══════════════════════════════════════════════════════╝\n\n");
-    #endif
-    
     if (result->success) {
-        #ifndef PRODUCTION
-        printf("  SUCCESS: ETW disabled\n");
-        #endif
-        #ifndef PRODUCTION
-        printf("  • EtwEventWrite patched   : %s\n", 
-               result->etwEventWritePatched ? "YES" : "NO");
-        #endif
-        #ifndef PRODUCTION
-        printf("  • EtwEventWriteEx patched : %s\n",
-               result->etwEventWriteExPatched ? "YES" : "NO");
-        #endif
-        #ifndef PRODUCTION
-        printf("\n");
-        #endif
-        #ifndef PRODUCTION
-        printf("  [INFO] Events no longer logged, EDR telemetry blocked.\n");
-        #endif
+        printf("[+] ETW disabled (EtwEventWrite: %s, EtwEventWriteEx: %s)\n",
+               result->etwEventWritePatched ? "OK" : "FAIL",
+               result->etwEventWriteExPatched ? "OK" : "FAIL");
     } else {
-        #ifndef PRODUCTION
-        printf("  FAILED: ETW bypass failed\n");
-        #endif
+        printf("[-] ETW bypass failed\n");
     }
-    
-    #ifndef PRODUCTION
-    printf("\n");
     #endif
 }

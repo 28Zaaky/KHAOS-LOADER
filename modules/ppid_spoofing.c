@@ -1,7 +1,9 @@
 /*
+ *
  * Author: 28Zaakypro@proton.me
  * PPID Spoofing - Makes process appear launched by legitimate parent (explorer.exe)
  * Uses PROC_THREAD_ATTRIBUTE_PARENT_PROCESS to set fake parent PID
+ * 
  */
 
 #include "ppid_spoofing.h"
@@ -38,7 +40,6 @@ DWORD FindProcessByName(const char* processName)
     return pid;
 }
 
-// Creates process with spoofed parent PID
 BOOL CreateProcessWithSpoofedPPID(
     const char* targetProcess,
     const char* parentProcess,
@@ -86,8 +87,7 @@ BOOL CreateProcessWithSpoofedPPID(
 
     InitializeProcThreadAttributeList(NULL, 1, 0, &attributeSize);
     
-    pAttributeList = (LPPROC_THREAD_ATTRIBUTE_LIST)HeapAlloc(
-        GetProcessHeap(), 0, attributeSize);
+    pAttributeList = (LPPROC_THREAD_ATTRIBUTE_LIST)HeapAlloc(GetProcessHeap(), 0, attributeSize);
     
     if (pAttributeList == NULL) {
         #ifndef PRODUCTION
@@ -197,10 +197,6 @@ BOOL CreateProcessWithSpoofedPPID(
 
     return TRUE;
 }
-
-// ============================================================================
-// AFFICHAGE
-// ============================================================================
 
 VOID PrintPPIDSpoofResult(PPPID_SPOOF_RESULT result)
 {

