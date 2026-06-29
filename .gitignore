@@ -1,0 +1,40 @@
+# Fichiers compilés
+*.o
+!modules/dosyscall.o
+*.exe
+*.dll
+*.so
+
+# Fichiers de build
+output/
+*.bin
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets et payloads
+payload/*.bin
+payload/key_iv.txt
+payload/shellcode_aes.txt
+*.key
+*.enc
+
+# Claude
+.claude/

