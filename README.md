@@ -1,6 +1,7 @@
 # KHAØS LOADER
 
-<img src="assets/banner.png" width="100%">
+<img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/dcaf636e-d48a-48eb-ac5d-ff3a026858f2" />
+
 
 ![Language](https://img.shields.io/badge/language-C-blue?style=flat-square)
 ![Language](https://img.shields.io/badge/language-Assembly-red?style=flat-square)
